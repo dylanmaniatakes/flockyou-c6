@@ -74,6 +74,7 @@ The first attempt used pioarduino `55.03.311` (Arduino 3.3.11 / ESP-IDF 5.5.5). 
 - Added a verified, matching set of ESP32-C6 bootloader, partition, OTA-data, and FlockYou application binaries under `firmware/`.
 - Changed `requirements.txt` back to minimal installer dependencies (`esptool` and `pyserial`) and moved PlatformIO into `requirements-dev.txt`.
 - Updated the README and flashing guide so ordinary installation uses `python3 flash.py`, like the original OuiSpy workflow, with no global `pio` command required.
+- Expanded the README installer directions to match the main repository's structure: prerequisites, dependency setup, single-board flashing, verification, command options, and troubleshooting.
 - Changed the standalone flasher from forced QIO to DIO after physical testing showed that QIO rewrote the DIO image header and caused a bootloader watchdog loop.
 
 ### Verification

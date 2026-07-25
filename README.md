@@ -23,26 +23,85 @@ The only wired peripheral is a piezo buzzer on the XIAO header pin labeled **D2*
 
 The source uses `D2`, not a hard-coded GPIO number. This matters because D2 is GPIO3 on the original XIAO ESP32-S3 but GPIO2 on the XIAO ESP32-C6. Keeping the header label preserves the physical wiring position. See [docs/HARDWARE.md](docs/HARDWARE.md) before changing pins.
 
-## Install the firmware — no PlatformIO required
+## Flashing
 
-The repository includes a verified set of ESP32-C6 binaries, following the original OuiSpy installer design. From the repository directory, run:
+Like the main OuiSpy repository, this fork includes everything needed to flash a board. PlatformIO and compiler tools are not required unless you want to modify and rebuild the firmware.
+
+### What you need
+
+- Python 3.8 or newer.
+- A USB-C **data** cable, not a charge-only cable.
+- The Seeed Studio XIAO ESP32-C6 connected to the computer.
+
+### Step 1: Install the flasher dependencies
+
+From this repository's directory, run:
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 flash.py
 ```
 
-The flasher finds the connected XIAO, asks for confirmation, writes all four C6 images, verifies their hashes, and reboots the board. Use `python3 flash.py --erase` when a complete flash erase is wanted first.
+On systems where the commands are named `python` and `pip`, this is equivalent to:
 
-If macOS or Linux refuses a system-wide `pip` installation, use an isolated environment:
+```bash
+pip install -r requirements.txt
+```
+
+If macOS or Linux refuses a system-wide Python package installation, use an isolated environment:
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
+```
+
+### Step 2: Flash one board
+
+With the XIAO ESP32-C6 connected, run:
+
+```bash
+python3 flash.py
+```
+
+If you used the isolated environment above, run:
+
+```bash
 .venv/bin/python flash.py
 ```
 
-On Windows, the last two commands are `.venv\Scripts\python -m pip install -r requirements.txt` and `.venv\Scripts\python flash.py`.
+On Windows, use `.venv\Scripts\python flash.py`.
+
+The script detects the serial port and included `flockyou-c6.bin`, shows the selected board and flash settings, then asks `Flash? [Y/n]`. Press Enter or type `y`. It writes the C6 bootloader, partition table, OTA data, and application, verifies every image, and reboots the board.
+
+If automatic reset does not connect, hold **BOOT**, briefly press **RESET**, release **BOOT**, and run the command again.
+
+### Step 3: Verify the installation
+
+1. Listen for the crow-like startup sound from the buzzer.
+2. Find the Wi-Fi network `flockyou`.
+3. Connect with password `flockyou123`.
+4. Open `http://192.168.4.1` in a browser.
+5. Confirm that the FlockYou dashboard loads and refreshes.
+
+### Flasher options
+
+```bash
+python3 flash.py                  # Flash one board interactively
+python3 flash.py --erase          # Erase the entire chip before flashing
+python3 flash.py --batch          # Flash multiple boards one after another
+python3 flash.py --batch --erase  # Batch mode with a full erase per board
+python3 flash.py --help           # Display the command reference
+```
+
+### Flashing troubleshooting
+
+| Problem | Suggested fix |
+|---|---|
+| `python3: command not found` | Install Python 3, or try `python` if that is its name on your system. |
+| `pip` or an externally-managed-environment error | Use the `.venv` commands above. |
+| `esptool not found` | Run `python3 -m pip install -r requirements.txt` with the same Python used to launch `flash.py`. |
+| No ESP32 detected | Check that the cable supports data, try another USB port, and use the BOOT/RESET procedure above. |
+| More than one serial device found | Select the XIAO's USB JTAG/serial port from the list. |
+| Flash succeeds but the board repeatedly resets | Confirm that all files came from this fork's `firmware/` directory. Do not mix ESP32-S3 and ESP32-C6 binaries. |
 
 ## Rebuild and upload for development
 
@@ -105,9 +164,9 @@ The detector still works normally when phone location is unavailable; detections
 | `docs/HARDWARE.md` | Wiring and S3-to-C6 pin mapping notes |
 | `FORK_CHANGES.md` | Running record of every change from upstream |
 
-## Standalone flasher
+## Refreshing the bundled installer binaries
 
-For normal development, prefer `pio run -t upload`. After modifying the firmware, refresh the self-contained binaries used by `flash.py`:
+After modifying and successfully testing the firmware, maintainers can refresh the self-contained binaries used by the main-repo-style installer:
 
 ```bash
 pio run
