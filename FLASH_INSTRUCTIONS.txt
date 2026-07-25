@@ -1,96 +1,74 @@
 ==============================================================================
-  OUI SPY UNIFIED BLUE -- Production Flash Instructions
-  Board: XIAO ESP32-S3
+  FLOCKYOU -- XIAO ESP32-C6 FLASH INSTRUCTIONS
 ==============================================================================
 
-  WHAT'S IN THE BOX
-  -----------------
-  flash.py              Flasher script (Python 3)
-  requirements.txt      Python dependencies
-  firmware/
-    bootloader.bin      ESP32-S3 bootloader         (0x0000)
-    partitions.bin      Partition table              (0x8000)
-    boot_app0.bin       OTA data                     (0xe000)
-    oui-spy-unified-blue.bin  Application firmware   (0x10000)
+HARDWARE
+--------
+Board:  Seeed Studio XIAO ESP32-C6
+Buzzer: D2 signal, GND return
 
+Do not flash the ESP32-S3 binaries from OuiSpy Unified Blue. Build artifacts
+are CPU-, board-, flash-, and partition-specific.
 
-  SETUP (one time)
-  ----------------
-  1. Install Python 3.8+ from https://www.python.org
-     - Windows: check "Add Python to PATH" during install
-     - Linux:   sudo apt install python3 python3-pip
-     - macOS:   brew install python3
+INSTALL PREBUILT FIRMWARE (NO PLATFORMIO REQUIRED)
+--------------------------------------------------
+1. Install Python 3.
+2. Install the standalone flasher dependencies:
 
-  2. Install USB drivers if needed:
-     - CH340/CH341:  https://www.wch-ic.com/downloads/CH341SER_ZIP.html
-     - CP210x:       https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
+     python3 -m pip install -r requirements.txt
 
-  3. Install Python dependencies:
+3. Connect the XIAO ESP32-C6 and run:
 
-     pip install -r requirements.txt
+     python3 flash.py
 
+The repository includes all four matching ESP32-C6 images. The flasher detects
+the port, asks for confirmation, writes the images, verifies them, and reboots.
+Add --erase for a complete flash erase before installation.
 
-  FLASH ONE BOARD
-  ---------------
-  1. Plug in XIAO ESP32-S3 via USB-C
-  2. Run:
+DEVELOPMENT BUILD AND UPLOAD
+----------------------------
+1. Install the pinned developer tools:
 
-     python flash.py
+     python3 -m pip install -r requirements-dev.txt
 
-  3. Confirm when prompted
-  4. Wait for "Done!" -- board reboots automatically
+2. Build:
 
+     pio run
 
-  FLASH MANY BOARDS (batch mode)
-  ------------------------------
-  1. Run:
+3. Connect the XIAO ESP32-C6 and upload:
 
-     python flash.py --batch
+     pio run -t upload
 
-  2. Plug in first board, script auto-detects and flashes
-  3. When done, swap board and press Enter
-  4. Repeat until all boards are flashed
-  5. Press Ctrl+C or type 'q' when finished
+4. Monitor startup at 115200 baud:
 
-  The script tracks success/fail counts for you.
+     pio device monitor -b 115200
 
-  To erase flash before writing (clean slate):
+If the port is unavailable, hold BOOT, connect USB, release BOOT, and retry.
 
-     python flash.py --batch --erase
+PREPARE AND USE THE STANDALONE FLASHER
+--------------------------------------
+After a successful PlatformIO build:
 
+     python3 scripts/package_firmware.py
+     python3 flash.py
 
-  VERIFYING A FLASHED BOARD
-  -------------------------
-  After a successful flash, the board reboots automatically.
+The packaging script refreshes these committed C6 files:
 
-  1. Listen for 4 ASCENDING BEEPS -- this is the boot confirmation.
-     If you hear the 4 beeps, the firmware is running correctly.
-  2. A WiFi AP appears: SSID "oui-spy" / password "ouispy123"
-  3. Connect to that AP and open http://192.168.4.1 in a browser
-  4. You should see the mode selector dashboard
+  firmware/bootloader.bin   C6 bootloader             0x0000
+  firmware/partitions.bin   4 MB partition table      0x8000
+  firmware/boot_app0.bin    OTA selection data        0xe000
+  firmware/flockyou-c6.bin  FlockYou application      0x10000
 
-  Quick batch test cycle:
-     Plug in -> auto-flash -> hear 4 beeps -> unplug -> next board
+Add --erase for a full chip erase before flashing. Add --batch to wait for and
+flash multiple native-USB XIAO boards one at a time.
 
+VERIFY THE FIRST BOARD
+----------------------
+1. Listen for the crow-like startup sound.
+2. Confirm the serial log says BLE scanning is active.
+3. Join Wi-Fi SSID "flockyou" with password "flockyou123".
+4. Open http://192.168.4.1 and confirm the dashboard refreshes.
+5. Test a known BLE advertisement if available.
 
-  TROUBLESHOOTING
-  ---------------
-  "No ESP32 detected"
-    - Check USB cable (must be data cable, not charge-only)
-    - Install CH340/CP210x drivers (see setup step 2)
-    - Try a different USB port
-    - On Windows: check Device Manager for COM port
-
-  "esptool not found"
-    - Run: pip install esptool pyserial
-    - Make sure Python is in your PATH
-
-  Flash succeeds but board doesn't boot
-    - Make sure all 4 .bin files are in firmware/ folder
-    - Try: python flash.py --erase   (full erase first)
-
-  Multiple boards detected
-    - The script lists all ports and lets you pick one
-    - Unplug other USB serial devices if possible
-
-==============================================================================
+This package has been flashed and boot-verified on a physical ESP32-C6. BLE
+detection matching still needs field testing with known advertisements.

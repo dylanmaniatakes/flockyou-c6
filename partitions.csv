@@ -1,5 +1,8 @@
-# Name,   Type, SubType,  Offset,   Size,     Flags
+# Name,   Type, SubType, Offset,   Size,     Flags
+# XIAO ESP32-C6 has 4 MB total flash. This is intentionally a single-app
+# layout: FlockYou has no OTA updater, so reserving a second app slot would
+# reduce both firmware headroom and detection-session storage for no benefit.
 nvs,      data, nvs,     0x9000,   0x5000,
 otadata,  data, ota,     0xe000,   0x2000,
-app0,     app,  ota_0,   0x10000,  0x600000,
-spiffs,   data, spiffs,  0x610000, 0x1F0000,
+app0,     app,  ota_0,   0x10000,  0x2F0000,
+spiffs,   data, spiffs,  0x300000, 0x100000,

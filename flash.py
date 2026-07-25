@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-OUI Spy Unified Blue -- Firmware Flasher (XIAO ESP32-S3)
+FlockYou C6 -- Firmware Flasher (Seeed Studio XIAO ESP32-C6)
 
 Drop your .bin in the firmware/ folder (or pass a path), plug in your
-XIAO ESP32-S3, and run:
+XIAO ESP32-C6, and run:
 
     python flash.py
 
@@ -34,22 +34,29 @@ if sys.platform == "win32":
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # -- Config ----------------------------------------------------------------
-# XIAO ESP32-S3: Xtensa dual-core, WiFi + BLE 5, PSRAM
-# Flash layout matches PlatformIO exactly (pio run -e seeed_xiao_esp32s3 -t upload -v)
-BOOT_OFFSET   = "0x0000"       # ESP32-S3 bootloader starts at 0x0 (C5 uses 0x2000)
+# XIAO ESP32-C6: RISC-V, Wi-Fi + BLE 5, 4 MB flash, no PSRAM.
+# These values must remain synchronized with platformio.ini, partitions.csv,
+# and a verbose `pio run -t upload -v` command. The support binaries are not
+# interchangeable with ESP32-S3 binaries even when their filenames match.
+BOOT_OFFSET   = "0x0000"
 PART_OFFSET   = "0x8000"
 OTA_OFFSET    = "0xe000"
 APP_OFFSET    = "0x10000"
-BAUD          = "921600"
-CHIP          = "esp32s3"
+BAUD          = "460800"
+CHIP          = "esp32c6"
+# The C6 images produced by this pinned toolchain declare DIO in their image
+# headers. Keep the standalone flasher aligned with those headers: forcing QIO
+# rewrites the bootloader header and causes an early watchdog-reset loop on the
+# physical XIAO ESP32-C6 before the application can start.
 FLASH_MODE    = "dio"
 FLASH_FREQ    = "80m"
-FLASH_SIZE    = "8MB"
+FLASH_SIZE    = "4MB"
 FIRMWARE_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
 
-# Known USB VID:PID pairs for ESP32-S3 / common UART bridges
+# Known USB vendor IDs for the XIAO C6 and common UART bridges.
 ESP_VIDS = {
     "303A",  # Espressif USB JTAG/serial
+    "2886",  # Seeed Studio native USB
     "1A86",  # CH340/CH341
     "10C4",  # CP210x
     "0403",  # FTDI
@@ -57,21 +64,21 @@ ESP_VIDS = {
 
 BANNER = """
   +==========================================+
-  |   OUI Spy Unified Blue -- S3 Flasher     |
+  |       FlockYou -- XIAO C6 Flasher        |
   +==========================================+"""
 
 
 def find_esp_candidates():
     """Return list of ESP32 serial port candidates, best match first.
-    Espressif native USB (VID 303A) is prioritized over generic UART bridges
-    since that's the correct interface for XIAO ESP32-S3 boards.
+    Native USB (Espressif VID 303A or Seeed VID 2886) is prioritized over
+    generic UART bridges because that is the expected XIAO C6 interface.
     """
     ports = serial.tools.list_ports.comports()
-    espressif = []   # VID 303A -- native USB on S3/C5/etc
+    espressif = []   # Native USB on supported XIAO/ESP boards
     others = []      # CH340, CP210x, FTDI, generic matches
     for p in ports:
         vid = f"{p.vid:04X}" if p.vid else ""
-        if vid == "303A":
+        if vid in {"303A", "2886"}:
             espressif.append(p)
         elif vid in ESP_VIDS:
             others.append(p)
@@ -98,15 +105,16 @@ def find_esp_candidates():
 
 def find_port(auto_pick=False):
     """Auto-detect the ESP32 serial port (macOS, Linux, Windows).
-    If auto_pick=True, only match Espressif native USB (VID 303A) to avoid
-    grabbing random UART adapters. Falls back to all candidates in interactive mode.
+    If auto_pick=True, only match Espressif/Seeed native USB to avoid grabbing
+    random UART adapters. Interactive mode can fall back to all candidates.
     """
     candidates = find_esp_candidates()
 
     if auto_pick:
-        # In batch mode, ONLY use Espressif native USB ports (303A)
-        # This prevents flashing random UART adapters on the desk
-        native = [p for p in candidates if p.vid and f"{p.vid:04X}" == "303A"]
+        # In batch mode, ONLY use XIAO/ESP native USB ports. This prevents
+        # accidentally selecting an unrelated UART adapter on the same desk.
+        native = [p for p in candidates
+                  if p.vid and f"{p.vid:04X}" in {"303A", "2886"}]
         if len(native) >= 1:
             return native[0].device
         return None
