@@ -83,6 +83,72 @@ The first attempt used pioarduino `55.03.311` (Arduino 3.3.11 / ESP-IDF 5.5.5). 
 - Serial boot confirmed SPIFFS, BLE scanning, buzzer startup, `flockyou` AP, captive DNS, and the web server.
 - Dashboard and real-world detection behavior remain to be checked by the user.
 
+## 2026-07-25 — Begin native Android GPS companion
+
+### What changed
+
+- Added a native Java Android application under `android/`, targeting Android 10 and newer with no third-party runtime libraries.
+- Added a system-managed `WifiNetworkSpecifier` connection request for SSID `flockyou` and bound only the companion app to the returned local network.
+- Embedded the existing ESP dashboard in a host-restricted WebView.
+- Replaced the dashboard GPS-card behavior inside the app with native Android location permission and `LocationManager` updates, avoiding the browser's HTTPS-only Geolocation API.
+- Forwarded latitude, longitude, and Android-reported accuracy to the existing `/api/gps` firmware endpoint.
+- Added native handling for dashboard JSON, CSV, and KML downloads through the ESP-bound network.
+- Restricted WebView navigation and downloads to the exact local origin `http://192.168.4.1` and disabled app-data backup.
+- Added detailed app usage, architecture, permission, cleartext-HTTP, privacy, and future foreground-service documentation.
+
+### Current scope
+
+- Version `0.1.0` sends location only while the app activity is visible.
+- It does not request background location or pretend to support screen-off wardriving.
+- A future foreground-service implementation must include a persistent notification, stop control, current Android service permissions, and physical-device power-policy testing.
+
+### Verification
+
+- `./gradlew clean assembleDebug lintDebug`: successful.
+- Debug APK produced for package `com.dylanmaniatakes.flockyou`, minimum API 29, target API 36.
+- Android lint: zero errors; one informational warning records that the project intentionally pins Gradle 8.13 instead of automatically following 8.14.5.
+- Android 15 emulator: APK installation, cold launch, edge-to-edge layout, location tracking state, and simulated-coordinate handling passed without a crash.
+- The simulated coordinate correctly reached the HTTP sender and reported that the ESP was unreachable from the emulator, exercising the expected failure path.
+- Physical Android Wi-Fi connection, real GPS forwarding, live WebView content, and export downloads are not yet tested because no Android device was connected to ADB.
+
+## 2026-07-25 — Android 0.2.0 background GPS and Connect crash fix
+
+### Connect crash
+
+- Added the missing `CHANGE_NETWORK_STATE` manifest permission required by `ConnectivityManager.requestNetwork()`. Without it, tapping Connect could throw an uncaught `SecurityException` on a physical phone.
+- Moved the network request into the service and wrapped both `SecurityException` and other runtime failures so Android or manufacturer-specific rejection becomes a visible status instead of an app crash.
+
+### Background operation
+
+- Added `GpsForwardingService`, a user-visible Android location foreground service that owns Wi-Fi, native location listeners, and GPS delivery to the ESP.
+- Declared `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, notification, and battery-exemption permissions required by current Android releases.
+- Added an ongoing low-priority notification with a Stop action.
+- Changed GPS updates to a nominal five-second / one-meter request and throttled endpoint sends to at most one every four seconds.
+- Made an explicitly started tracking session sticky across ordinary process recreation while deliberately avoiding automatic start after phone reboot.
+- Removed activity-lifecycle GPS cleanup. Closing the dashboard, pressing Home, or turning off the screen no longer intentionally stops the service.
+- Kept `ACCESS_BACKGROUND_LOCATION` out of the app: the location foreground service is started by a visible user action and stays visible through its notification.
+
+### Battery handling
+
+- Added an explanation dialog before Android's standard unrestricted-battery confirmation.
+- The app cannot grant itself an exemption; the user may allow or deny the request, and the decision remains reversible in Android settings.
+- Recorded that manufacturer-specific background restrictions can still require manual configuration.
+
+### Internal security and state
+
+- Added a signature-only internal permission plus `RECEIVER_NOT_EXPORTED` on Android 13+ for service-to-activity status broadcasts.
+- Stored only connection/tracking status needed to restore controls when the dashboard activity reopens. Coordinates remain unstored by the Android app.
+
+### Verification
+
+- `./gradlew assembleDebug lintDebug`: successful with zero lint errors.
+- Connect no longer crashes in the Android 15 emulator and opens Android's system Wi-Fi selection UI.
+- Verified foreground-service type, ongoing notification, sticky tracking state, simulated coordinate processing after pressing Home, and activity state restoration.
+- Verified both the in-app battery explanation and Android's system-owned “always run in background” prompt; the emulator granted the exemption.
+- Verified **STOP GPS** removes the service and clears tracking state.
+- Lint retains two intentional warnings: the pinned Gradle version and Play-policy caution for direct battery-exemption requests in a sideloaded utility.
+- Real ESP Wi-Fi, physical GNSS, screen-off duration, and manufacturer battery behavior still require physical-phone testing.
+
 ## Entry template
 
 Copy this section for later work:

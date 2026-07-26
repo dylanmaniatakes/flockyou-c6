@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The XIAO serves a local-only HTTP dashboard and has no public hostname or
+  trusted TLS certificate. This app deliberately permits cleartext traffic,
+  then constrains navigation in MainActivity to the fixed 192.168.4.1 host.
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- Required for http://192.168.4.1; MainActivity rejects every other host. -->
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration" />
+</network-security-config>

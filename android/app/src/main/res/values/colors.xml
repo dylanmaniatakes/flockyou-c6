@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="flock_background">#0A0012</color>
+    <color name="flock_panel">#1A0033</color>
+    <color name="flock_pink">#EC4899</color>
+</resources>

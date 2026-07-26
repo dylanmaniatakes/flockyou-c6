@@ -3,3 +3,10 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Android build products and machine-specific SDK configuration.
+android/.gradle/
+android/**/build/
+android/local.properties
+android/*.jks
+android/*.keystore

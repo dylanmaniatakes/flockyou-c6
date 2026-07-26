@@ -145,7 +145,9 @@ Detections are kept in memory, periodically persisted to SPIFFS, shown in the da
 
 The GPS card in the dashboard asks the connected phone's browser for location and sends it to the ESP32. There is no GPS module attached to the C6.
 
-Browser geolocation generally requires a secure context. Android Chrome can be configured to treat `http://192.168.4.1` as secure through `chrome://flags` → **Insecure origins treated as secure**. iOS Safari does not expose geolocation to this HTTP page.
+Browser geolocation requires a secure context. For Android, this fork now includes a native companion app that supplies location without exposing the ESP dashboard over HTTPS. Version 0.2.0 can keep GPS delivery active through a visible foreground-service notification after the dashboard closes or the screen turns off. The ESP32 continues scanning and operating its buzzer independently, so the app can be reopened when an alert sounds. See [android/README.md](android/README.md) for installation, battery settings, and usage.
+
+Android Chrome can still be configured for testing through `chrome://flags/#unsafely-treat-insecure-origin-as-secure`: enable the flag, enter the exact origin `http://192.168.4.1`, relaunch Chrome, and grant Chrome precise location permission. This is a browser testing override, not the recommended long-term workflow. iOS Safari does not expose geolocation to this HTTP page.
 
 The detector still works normally when phone location is unavailable; detections simply have no coordinates.
 
@@ -160,7 +162,9 @@ The detector still works normally when phone location is unavailable; detections
 | `requirements.txt` | Minimal dependencies for the standalone flasher |
 | `requirements-dev.txt` | PlatformIO plus the flasher dependencies |
 | `scripts/package_firmware.py` | Copies a PlatformIO build into the `firmware/` layout used by `flash.py` |
+| `android/` | Native Android GPS bridge and embedded ESP dashboard |
 | `docs/ARCHITECTURE.md` | Human-readable code flow and modification guide |
+| `docs/ANDROID_APP.md` | Android networking, permissions, privacy, and data flow |
 | `docs/HARDWARE.md` | Wiring and S3-to-C6 pin mapping notes |
 | `FORK_CHANGES.md` | Running record of every change from upstream |
 

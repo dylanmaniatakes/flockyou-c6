@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FlockYou Companion</string>
+    <string name="status_initial">Connect to flockyou, then start GPS</string>
+    <string name="start_gps">START GPS</string>
+    <string name="stop_gps">STOP GPS</string>
+    <string name="gps_channel_name">Background GPS</string>
+    <string name="gps_notification_title">FlockYou Companion active</string>
+    <string name="gps_notification_starting">Starting location and ESP connection…</string>
+    <string name="gps_notification_stop">Stop</string>
+    <string name="battery_dialog_title">Allow background reliability?</string>
+    <string name="battery_dialog_message">Android may suspend GPS or the ESP connection when the screen is off. Allow unrestricted battery use for FlockYou Companion so its visible GPS service can continue running. You can revoke this later in Android settings.</string>
+    <string name="battery_dialog_allow">Open battery prompt</string>
+    <string name="battery_dialog_later">Not now</string>
+</resources>
